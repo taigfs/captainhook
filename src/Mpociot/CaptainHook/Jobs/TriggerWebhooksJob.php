@@ -80,14 +80,22 @@ class TriggerWebhooksJob implements ShouldQueue
             return;
         }
 
-        $logging = $config->get('captain_hook.log.active');
-        $transformer = $this->resolveCallable($config->get('captain_hook.transformer'), 'transform');
-        $responseCallback = $this->resolveCallable($config->get('captain_hook.response_callback'), 'handle');
+        $logging = config('captain_hook.log.active');
+
+        //$transformer = $this->resolveCallable(config('captain_hook.transformer'), 'transform');
+        $transformer = function ($eventData, $webhook) {
+            return json_encode($eventData);
+        };
+
+        //$responseCallback = $this->resolveCallable(config('captain_hook.response_callback'), 'handle');
+        $responseCallback = function ($webhook, $response) {
+            // Handle custom response status codes, ...
+        };
 
         foreach ($this->webhooks as $webhook) {
             if ($logging) {
-                if ($config->get('captain_hook.log.storage_quantity') != -1 &&
-                    $webhook->logs()->count() >= $config->get('captain_hook.log.storage_quantity')) {
+                if (config('captain_hook.log.storage_quantity') != -1 &&
+                    $webhook->logs()->count() >= config('captain_hook.log.storage_quantity')) {
                     $webhook->logs()->orderBy('updated_at', 'asc')->first()->delete();
                 }
                 $log = new WebhookLog([
@@ -130,4 +138,5 @@ class TriggerWebhooksJob implements ShouldQueue
             }
         }
     }
+
 }
