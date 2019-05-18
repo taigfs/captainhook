@@ -5,6 +5,7 @@ namespace Mpociot\CaptainHook;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Mpociot\CaptainHook\Commands\AddWebhook;
@@ -61,7 +62,7 @@ class CaptainHookServiceProvider extends ServiceProvider
         $this->publishMigration();
         $this->publishConfig();
         $this->publishSparkResources();
-        $this->listeners = collect($this->config->get('captain_hook.listeners', []))->values();
+        $this->listeners = collect(config('captain_hook.listeners', []))->values();
         $this->registerEventListeners();
         $this->registerRoutes();
     }
@@ -203,9 +204,11 @@ class CaptainHookServiceProvider extends ServiceProvider
      *
      * @param $eventData
      */
-    public function handleEvent($eventData)
+    public function handleEvent($eventName, $eventData)
     {
-        $eventName = Event::firing();
+
+        if(\Illuminate\Support\Str::contains($eventName, 'Mpociot\\CaptainHook\\Webhook')){ return; }
+
         $webhooks = $this->getWebhooks()->where('event', $eventName);
         $webhooks = $webhooks->filter($this->config->get('captain_hook.filter', null));
 
